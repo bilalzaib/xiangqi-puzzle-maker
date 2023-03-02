@@ -1,0 +1,5 @@
+colorama==0.4.6
+invoke==2.0.0
+pyffish==0.0.77
+python-chess==1.999
+requests==2.28.2

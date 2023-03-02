@@ -1,0 +1,12 @@
+*.py[cd]
+*/*.py[cd]
+stockfish-*
+Stockfish
+venv
+.mypy_cache
+/*.pgn
+/inputs
+/outputs
+.idea/
+/*.csv
+xqpuzzles/local.py
