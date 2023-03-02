@@ -2,11 +2,17 @@ import csv
 
 import requests
 
-JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTY3NzEwMTI1NCwianRpIjoiMmYyNmFmYjUtNmM1MC00OWZhLWIwODctNTVjODUyMzg1NDA1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6NDE2OSwibmJmIjoxNjc3MTAxMjU0LCJleHAiOjE2NzgxMzgwNTR9._7nhRcZnsFKdiOuyMPf62XaqkyVzgqtXn9Tof-Fj5dM'
+# --------------------------------------------------------------------
+# Required: Get admin JWT from browser cookies or storage data
+JWT = 'admin-JWT'
+# Required: Add a valid username fromm xiangqi.com
+user = 'zaib'
+# Optional: Mention, how many games should script fetch of a given user
+DEFAULT_TOTAL_GAMES = 30
+# --------------------------------------------------------------------
+
 BASE_URL = 'https://api.play.xiangqi.com'
 REQUEST_URL_T = BASE_URL + '/api/users/games/{}'
-
-DEFAULT_TOTAL_GAMES = 30
 GAMES_PER_PAGE = 12
 
 
@@ -14,7 +20,9 @@ def fetch_games(username, total_games=DEFAULT_TOTAL_GAMES):
     headers = {'Authorization': 'Bearer {}'.format(JWT)}
     url = REQUEST_URL_T.format(username)
 
+    print(f'Fetching games of {username}. Please wait...')
     games = []
+    # TODO: Get total available games of a user
     for page in range(1, (total_games // GAMES_PER_PAGE) + 2):
         params = {'page': page}
         try:
@@ -30,9 +38,9 @@ def fetch_games(username, total_games=DEFAULT_TOTAL_GAMES):
     return games
 
 
-user = 'zaib'
-games = fetch_games(user, total_games=15)
+games = fetch_games(user)
 
+print(f'Games are saved to {user}.csv')
 with open(f'{user}.csv', 'w', newline='') as csvfile:
     fieldnames = ['id', 'rplayer', 'bplayer', 'moves_count', 'moves']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)

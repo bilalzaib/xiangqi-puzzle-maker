@@ -36,7 +36,6 @@ parser.add_argument("--quiet", default=False, action="store_true",
 parser.add_argument("--scan-only", default=False, action="store_true",
                     help="Only scan for possible puzzles. Don't analyze positions")
 
-print(sys.argv)
 if len(sys.argv) < 2:
     parser.print_usage()
     sys.exit(0)
