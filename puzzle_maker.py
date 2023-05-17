@@ -33,8 +33,8 @@ parser.add_argument("--engine", metavar="ENGINE", type=str, choices=['pikafish',
                     help="Give a valid engine name ('pikafish', 'stockfish')", default='pikafish')
 parser.add_argument("--quiet", default=False, action="store_true",
                     help="substantially reduce the number of logged messages")
-parser.add_argument("--scan-only", default=False, action="store_true",
-                    help="Only scan for possible puzzles. Don't analyze positions")
+parser.add_argument("--out-csv", default='puzzles.csv', type=str,
+                    help="The name of output CSV file where founded puzzles will be imported")
 
 if len(sys.argv) < 2:
     parser.print_usage()
@@ -72,17 +72,11 @@ if settings.moves:
 
         log(Color.YELLOW, "# Found valid puzzle positions: %d" % len(puzzles))
 
-        # TODO: Remove this code
-        with open('output.csv', 'w', newline='') as csvfile:
-            fieldnames = ['game_id', 'url', 'fen', 'theme', 'score', 'first_turn', 'pv']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
+        export_puzzles_to_csv(settings.out_csv, puzzles)
 
-            export_puzzles_to_csv(writer, puzzles)
-
-            for puzzle in puzzles:
-                url = f'https://xiangqi-dev.arbisoft.com/editor/{puzzle["fen"].split()[0]}'
-                log(Color.UNDERLINE, f'Position: {url}')
+        for puzzle in puzzles:
+            url = f'https://xiangqi-dev.arbisoft.com/editor/{puzzle["fen"].split()[0]}'
+            log(Color.UNDERLINE, f'Position: {url}')
 
         engine.quit()
         exit(0)
@@ -95,28 +89,21 @@ log(Color.DIM, engine.name)
 
 with open(settings.games_csv, 'r') as file:
     reader = csv.DictReader(file)
+    for game in reader:
+        try:
+            game_moves = ast.literal_eval(game['moves'])
+            log(Color.DARK_BLUE, str(game_moves))
+            puzzles = find_puzzle_candidates(engine, game_moves, skip_initial=5)
+            export_puzzles_to_csv(settings.out_csv, puzzles, game_id=game['id'])
 
-    out_file = settings.games_csv.split('.')[0]
-    with open(f'{out_file}_out.csv', 'w', newline='') as csvfile:
-        fieldnames = ['game_id', 'url', 'fen', 'theme', 'score', 'first_turn', 'pv']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+            log(Color.YELLOW, f"Found {len(puzzles)} valid positions from game ID {game['id']}")
+            for puzzle in puzzles:
+                log(Color.BOLD, f'First Turn ==> {puzzle["first_turn"]}')
+                url = f'https://xiangqi-dev.arbisoft.com/editor/{puzzle["fen"].split()[0]}'
+                log(Color.UNDERLINE, url)
 
-        for game in reader:
-            try:
-                game_moves = ast.literal_eval(game['moves'])
-                log(Color.DARK_BLUE, str(game_moves))
-                puzzles = find_puzzle_candidates(engine, game_moves, skip_initial=10)
-                export_puzzles_to_csv(writer, puzzles, game_id=game['id'])
-
-                log(Color.YELLOW, f"Found {len(puzzles)} valid positions from game ID {game['id']}")
-                for puzzle in puzzles:
-                    log(Color.BOLD, f'First Turn ==> {puzzle["first_turn"]}')
-                    url = f'https://xiangqi-dev.arbisoft.com/editor/{puzzle["fen"].split()[0]}'
-                    log(Color.UNDERLINE, url)
-
-            except Exception as exp:
-                logging.info(f'Got exception in game: {game["id"]}')
-                logging.exception(exp)
+        except Exception as exp:
+            logging.info(f'Got exception in game: {game["id"]}')
+            logging.exception(exp)
 
 engine.quit()

@@ -1,7 +1,9 @@
 import csv
+import os
 
-from chess import PIECE_TYPES, Board, popcount
 from chess.engine import Score
+
+from xqpuzzles.xqboard import XiangqiBoard
 
 
 def sign(score: Score) -> int:
@@ -15,48 +17,41 @@ def sign(score: Score) -> int:
         return -1
     return 0
 
-def material_total(board: Board) -> float:
-    """ Total material value on the board
-    """
-    value = 0
-    for v, pt in zip([0,3,3,5.5,9], PIECE_TYPES):
-        value += v * (len(board.pieces(pt, True)) + len(board.pieces(pt, False)))
-    return value
 
-def material_difference(board: Board) -> float:
-    """ Difference in material value (positive means white has more)
-    """
-    diff = 0
-    for v, pt in zip([0,3,3,5.5,9], PIECE_TYPES):
-        diff += v * (len(board.pieces(pt, True)) - len(board.pieces(pt, False)))
-    return diff
+def get_material_diff(board: XiangqiBoard):
+    red = 0
+    black = 0
+    for piece in board.fen.split(' ')[0]:
+        if piece in ('r', 'c', 'n', 'h'):
+            black += 1
+        elif piece in ('R', 'C', 'N', 'H'):
+            red += 1
 
-def material_count(board: Board) -> int:
-    """ Count the number of pieces on the board
-    """
-    return popcount(board.occupied)
-
-def fullmove_string(board: Board) -> str:
-    """ 1. e4
-        2... d5
-    """
-    move_num = board.fullmove_number
-    if board.turn:
-        move_str = "%s." % move_num
-    else:
-        move_str = "%s..." % move_num
-    return move_str.ljust(7)
+    return abs(red - black)
 
 
-def export_puzzles_to_csv(writer, puzzles, game_id=None):
-    for puzzle in puzzles:
-        row = {
-            'game_id': game_id,
-            'url': f'https://xiangqi-dev.arbisoft.com/editor/{puzzle["fen"].split()[0]}',
-            'fen': puzzle['fen'],
-            'theme': puzzle['theme'],
-            'score': puzzle['score'],
-            'first_turn': puzzle['first_turn'],
-            'pv': puzzle['pv'],
-        }
-        writer.writerow(row)
+def export_puzzles_to_csv(csv_file, puzzles, game_id=None):
+    # Check if the file exists
+    if not os.path.isfile(csv_file):
+        # If it doesn't exist, create a new file and write the header row
+        with open(csv_file, 'w', newline='') as f:
+            fieldnames = ['game_id', 'fen', 'moves_count', 'theme', 'score', 'first_turn', 'pv', 'url']
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+
+    with open(csv_file, 'a', newline='') as f:
+        fieldnames = ['game_id', 'fen', 'moves_count', 'theme', 'score', 'first_turn', 'pv', 'url']
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+        for puzzle in puzzles:
+            row = {
+                'game_id': game_id,
+                'fen': puzzle['fen'],
+                'moves_count': puzzle['moves_count'],
+                'theme': puzzle['theme'],
+                'score': puzzle['score'],
+                'first_turn': puzzle['first_turn'],
+                'pv': puzzle['pv'],
+                'url': f'https://xiangqi-dev.arbisoft.com/editor/{puzzle["fen"].split()[0]}',
+            }
+            writer.writerow(row)
